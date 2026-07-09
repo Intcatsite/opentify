@@ -1,0 +1,115 @@
+import { useState } from 'react'
+import { open } from '@tauri-apps/plugin-dialog'
+import { useStore } from '../state/store'
+
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac']
+
+export function Sidebar() {
+  const library = useStore((s) => s.library)
+  const view = useStore((s) => s.view)
+  const setView = useStore((s) => s.setView)
+  const importFiles = useStore((s) => s.importFiles)
+  const importFolder = useStore((s) => s.importFolder)
+  const createPlaylist = useStore((s) => s.createPlaylist)
+  const [creating, setCreating] = useState(false)
+  const [newName, setNewName] = useState('')
+
+  async function handleImportFiles() {
+    const selected = await open({
+      multiple: true,
+      filters: [{ name: 'Audio', extensions: AUDIO_EXTENSIONS }],
+    })
+    if (!selected) return
+    const paths = Array.isArray(selected) ? selected : [selected]
+    await importFiles(paths)
+  }
+
+  async function handleImportFolder() {
+    const selected = await open({ directory: true })
+    if (!selected || Array.isArray(selected)) return
+    await importFolder(selected)
+  }
+
+  async function submitNewPlaylist() {
+    const name = newName.trim()
+    if (name) await createPlaylist(name)
+    setNewName('')
+    setCreating(false)
+  }
+
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-brand">
+        <span className="brand-mark">♪</span>
+        <span className="brand-name">Opentify</span>
+      </div>
+
+      <nav className="sidebar-nav">
+        <button
+          className={`nav-item ${view.kind === 'library' ? 'active' : ''}`}
+          onClick={() => setView({ kind: 'library' })}
+        >
+          <span className="nav-icon">🎵</span> Your Library
+        </button>
+      </nav>
+
+      <div className="sidebar-actions">
+        <button className="sidebar-action" onClick={handleImportFiles}>
+          + Import files
+        </button>
+        <button className="sidebar-action" onClick={handleImportFolder}>
+          + Import folder
+        </button>
+      </div>
+
+      <div className="sidebar-playlists">
+        <div className="sidebar-section-header">
+          <span>Playlists</span>
+          <button className="icon-button" onClick={() => setCreating(true)} title="New playlist">
+            +
+          </button>
+        </div>
+
+        {creating && (
+          <form
+            className="new-playlist-form"
+            onSubmit={(e) => {
+              e.preventDefault()
+              submitNewPlaylist()
+            }}
+          >
+            <input
+              autoFocus
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onBlur={submitNewPlaylist}
+              placeholder="Playlist name"
+            />
+          </form>
+        )}
+
+        <ul className="playlist-list">
+          {library.playlists.map((playlist) => (
+            <li key={playlist.id}>
+              <button
+                className={`nav-item ${
+                  view.kind === 'playlist' && view.id === playlist.id ? 'active' : ''
+                }`}
+                onClick={() => setView({ kind: 'playlist', id: playlist.id })}
+              >
+                {playlist.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <button
+        className={`nav-item settings-item ${view.kind === 'settings' ? 'active' : ''}`}
+        onClick={() => setView({ kind: 'settings' })}
+      >
+        <span className="nav-icon">⚙</span> Settings
+      </button>
+    </aside>
+  )
+}
