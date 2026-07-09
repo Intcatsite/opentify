@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useStore } from '../state/store'
 import type { Track } from '../types'
-import { IconEdit, IconMore, IconNote, IconPlay, IconTrash } from './icons'
+import { coverGradient, genreColor } from '../genreColors'
+import { IconEdit, IconEqualizer, IconMore, IconNote, IconTrash } from './icons'
 import { EditTrackModal } from './EditTrackModal'
 
 function formatDuration(secs: number): string {
@@ -24,10 +25,13 @@ export function TrackRow({ track, index, isActive, isPlaying, onPlay }: TrackRow
   const addToPlaylist = useStore((s) => s.addToPlaylist)
   const removeTrack = useStore((s) => s.removeTrack)
   const classifyGenre = useStore((s) => s.classifyGenre)
+  const setTrackGenre = useStore((s) => s.setTrackGenre)
   const aiMode = useStore((s) => s.settings.ai_provider.mode)
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [classifying, setClassifying] = useState(false)
+  const [editingGenre, setEditingGenre] = useState(false)
+  const [genreDraft, setGenreDraft] = useState('')
 
   async function handleClassify() {
     setClassifying(true)
@@ -40,18 +44,32 @@ export function TrackRow({ track, index, isActive, isPlaying, onPlay }: TrackRow
     }
   }
 
+  function startEditingGenre(current: string) {
+    setGenreDraft(current)
+    setEditingGenre(true)
+  }
+
+  async function saveGenreDraft() {
+    setEditingGenre(false)
+    const value = genreDraft.trim()
+    if (value) await setTrackGenre(track.id, value)
+  }
+
   const genreLabel = track.ai_genre ?? track.genre
 
   return (
     <div className={`track-row ${isActive ? 'active' : ''}`} onDoubleClick={onPlay}>
       <div className="track-row-index" onClick={onPlay}>
-        {isActive && isPlaying ? <IconPlay className="playing-indicator" /> : index + 1}
+        {isActive && isPlaying ? <IconEqualizer className="playing-indicator" /> : index + 1}
       </div>
       <div className="track-row-cover">
         {track.cover_data_url ? (
           <img src={track.cover_data_url} alt="" />
         ) : (
-          <div className="cover-placeholder">
+          <div
+            className="cover-placeholder"
+            style={{ background: coverGradient(`${track.title}-${track.artist}`) }}
+          >
             <IconNote />
           </div>
         )}
@@ -62,14 +80,35 @@ export function TrackRow({ track, index, isActive, isPlaying, onPlay }: TrackRow
       </div>
       <div className="track-row-album">{track.album}</div>
       <div className="track-row-genre">
-        {genreLabel ? (
-          <span className={`genre-badge ${track.ai_genre ? 'ai' : ''}`}>{genreLabel}</span>
+        {editingGenre ? (
+          <input
+            autoFocus
+            className="genre-edit-input"
+            value={genreDraft}
+            onChange={(e) => setGenreDraft(e.target.value)}
+            onBlur={saveGenreDraft}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur()
+              if (e.key === 'Escape') setEditingGenre(false)
+            }}
+          />
+        ) : genreLabel ? (
+          <button
+            className="genre-badge"
+            style={{ background: genreColor(genreLabel).bg, color: genreColor(genreLabel).fg }}
+            onClick={() => startEditingGenre(genreLabel)}
+            title="Click to correct genre"
+          >
+            {genreLabel}
+          </button>
         ) : aiMode !== 'none' ? (
           <button className="ghost-button" disabled={classifying} onClick={handleClassify}>
             {classifying ? 'Detecting…' : 'Detect genre'}
           </button>
         ) : (
-          <span className="track-row-genre-empty">—</span>
+          <button className="ghost-button" onClick={() => startEditingGenre('')}>
+            Set genre
+          </button>
         )}
       </div>
       <div className="track-row-duration">{formatDuration(track.duration_secs)}</div>

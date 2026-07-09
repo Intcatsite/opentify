@@ -15,6 +15,8 @@ export const api = {
   removeTrack: (trackId: string) => invoke<Library>('remove_track', { trackId }),
   updateTrackMetadata: (trackId: string, updates: TrackMetadataUpdate) =>
     invoke<Library>('update_track_metadata', { trackId, updates }),
+  setTrackGenre: (trackId: string, genre: string) =>
+    invoke<Library>('set_track_genre', { trackId, genre }),
 
   createPlaylist: (name: string) => invoke<Playlist>('create_playlist', { name }),
   deletePlaylist: (playlistId: string) => invoke<void>('delete_playlist', { playlistId }),

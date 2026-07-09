@@ -1,4 +1,5 @@
 import { useStore } from '../state/store'
+import { coverGradient } from '../genreColors'
 import {
   IconChevronDown,
   IconNext,
@@ -60,7 +61,10 @@ export function NowPlayingView() {
             {currentTrack.cover_data_url ? (
               <img src={currentTrack.cover_data_url} alt="" />
             ) : (
-              <div className="cover-placeholder large">
+              <div
+                className="cover-placeholder large"
+                style={{ background: coverGradient(`${currentTrack.title}-${currentTrack.artist}`) }}
+              >
                 <IconNote />
               </div>
             )}
@@ -131,7 +135,10 @@ export function NowPlayingView() {
                       {track.cover_data_url ? (
                         <img src={track.cover_data_url} alt="" />
                       ) : (
-                        <div className="cover-placeholder">
+                        <div
+                          className="cover-placeholder"
+                          style={{ background: coverGradient(`${track.title}-${track.artist}`) }}
+                        >
                           <IconNote />
                         </div>
                       )}

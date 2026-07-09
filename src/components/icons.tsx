@@ -197,6 +197,27 @@ export function IconCheck(props: IconProps) {
   )
 }
 
+export function IconEqualizer(props: IconProps) {
+  return (
+    <svg {...base(props)} fill="currentColor" stroke="none" className={`equalizer ${props.className ?? ''}`}>
+      <rect className="equalizer-bar" x="4" y="10" width="3.5" height="10" rx="1" />
+      <rect className="equalizer-bar" x="10.25" y="4" width="3.5" height="16" rx="1" />
+      <rect className="equalizer-bar" x="16.5" y="8" width="3.5" height="12" rx="1" />
+    </svg>
+  )
+}
+
+export function IconExpand(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+      <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+      <path d="M21 16v3a2 2 0 0 1-2 2h-3" />
+      <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+    </svg>
+  )
+}
+
 export function IconClose(props: IconProps) {
   return (
     <svg {...base(props)}>

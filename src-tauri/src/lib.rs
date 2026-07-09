@@ -93,6 +93,23 @@ fn remove_track(state: State<AppState>, track_id: String) -> Result<Library, Str
 }
 
 #[tauri::command]
+fn set_track_genre(state: State<AppState>, track_id: String, genre: String) -> Result<Library, String> {
+    {
+        let mut library = state.library.inner.lock().map_err(|e| e.to_string())?;
+        if let Some(track) = library.tracks.iter_mut().find(|t| t.id == track_id) {
+            track.ai_genre = Some(genre);
+        }
+    }
+    state.library.persist()?;
+    state
+        .library
+        .inner
+        .lock()
+        .map_err(|e| e.to_string())
+        .map(|l| l.clone())
+}
+
+#[tauri::command]
 fn update_track_metadata(
     state: State<AppState>,
     track_id: String,
@@ -294,6 +311,7 @@ pub fn run() {
             scan_folder,
             remove_track,
             update_track_metadata,
+            set_track_genre,
             create_playlist,
             delete_playlist,
             add_to_playlist,

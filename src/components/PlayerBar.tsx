@@ -1,5 +1,7 @@
 import { useStore } from '../state/store'
+import { coverGradient } from '../genreColors'
 import {
+  IconExpand,
   IconNext,
   IconNote,
   IconPause,
@@ -45,14 +47,22 @@ export function PlayerBar() {
             onClick={() => setNowPlayingOpen(true)}
             title="Open now playing"
           >
-            <div className="track-row-cover">
+            <div className="track-row-cover player-bar-cover">
               {currentTrack.cover_data_url ? (
                 <img src={currentTrack.cover_data_url} alt="" />
               ) : (
-                <div className="cover-placeholder">
+                <div
+                  className="cover-placeholder"
+                  style={{
+                    background: coverGradient(`${currentTrack.title}-${currentTrack.artist}`),
+                  }}
+                >
                   <IconNote />
                 </div>
               )}
+              <span className="player-bar-cover-expand">
+                <IconExpand />
+              </span>
             </div>
             <div className="track-row-info">
               <div className="track-row-title">{currentTrack.title}</div>

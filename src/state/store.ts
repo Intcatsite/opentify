@@ -26,6 +26,8 @@ interface OpentifyState {
   shuffle: boolean
   repeat: RepeatMode
 
+  analyzing: { current: number; total: number } | null
+
   init: () => Promise<void>
   setView: (view: View) => void
 
@@ -33,6 +35,7 @@ interface OpentifyState {
   importFolder: (folder: string) => Promise<void>
   removeTrack: (trackId: string) => Promise<void>
   updateTrackMetadata: (trackId: string, updates: TrackMetadataUpdate) => Promise<void>
+  setTrackGenre: (trackId: string, genre: string) => Promise<void>
 
   nowPlayingOpen: boolean
   setNowPlayingOpen: (open: boolean) => void
@@ -69,7 +72,22 @@ function shuffleArray<T>(items: T[]): T[] {
   return copy
 }
 
-export const useStore = create<OpentifyState>((set, get) => ({
+export const useStore = create<OpentifyState>((set, get) => {
+  async function classifyNewTracks(trackIds: string[]) {
+    if (trackIds.length === 0 || get().settings.ai_provider.mode === 'none') return
+    set({ analyzing: { current: 0, total: trackIds.length } })
+    for (let i = 0; i < trackIds.length; i++) {
+      try {
+        await get().classifyGenre(trackIds[i])
+      } catch (e) {
+        console.error(e)
+      }
+      set({ analyzing: { current: i + 1, total: trackIds.length } })
+    }
+    set({ analyzing: null })
+  }
+
+  return {
   library: { tracks: [], playlists: [], watched_folders: [] },
   settings: { ai_provider: { mode: 'none' }, theme: null },
   view: { kind: 'library' },
@@ -83,6 +101,7 @@ export const useStore = create<OpentifyState>((set, get) => ({
   shuffle: false,
   repeat: 'off',
   nowPlayingOpen: false,
+  analyzing: null,
 
   init: async () => {
     set({ loading: true, error: null })
@@ -99,13 +118,19 @@ export const useStore = create<OpentifyState>((set, get) => ({
 
   importFiles: async (paths) => {
     if (paths.length === 0) return
+    const existingIds = new Set(get().library.tracks.map((t) => t.id))
     const library = await api.addFiles(paths)
     set({ library })
+    const newIds = library.tracks.map((t) => t.id).filter((id) => !existingIds.has(id))
+    await classifyNewTracks(newIds)
   },
 
   importFolder: async (folder) => {
+    const existingIds = new Set(get().library.tracks.map((t) => t.id))
     const library = await api.scanFolder(folder)
     set({ library })
+    const newIds = library.tracks.map((t) => t.id).filter((id) => !existingIds.has(id))
+    await classifyNewTracks(newIds)
   },
 
   removeTrack: async (trackId) => {
@@ -115,6 +140,11 @@ export const useStore = create<OpentifyState>((set, get) => ({
 
   updateTrackMetadata: async (trackId, updates) => {
     const library = await api.updateTrackMetadata(trackId, updates)
+    set({ library })
+  },
+
+  setTrackGenre: async (trackId, genre) => {
+    const library = await api.setTrackGenre(trackId, genre)
     set({ library })
   },
 
@@ -260,4 +290,5 @@ export const useStore = create<OpentifyState>((set, get) => ({
     const id = queue[currentIndex]
     return library.tracks.find((t) => t.id === id)
   },
-}))
+  }
+})

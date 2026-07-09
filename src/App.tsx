@@ -8,6 +8,7 @@ import { PlaylistView } from './components/PlaylistView'
 import { SettingsView } from './components/SettingsView'
 import { PlayerBar } from './components/PlayerBar'
 import { NowPlayingView } from './components/NowPlayingView'
+import { AnalyzingBanner } from './components/AnalyzingBanner'
 import type { PlaybackProgress } from './types'
 import './App.css'
 
@@ -70,6 +71,7 @@ function App() {
           )}
         </main>
       </div>
+      <AnalyzingBanner />
       <PlayerBar />
       {nowPlayingOpen && <NowPlayingView />}
     </div>
