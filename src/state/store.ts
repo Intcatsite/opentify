@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import { api } from '../api/tauri'
-import type { AiProviderConfig, AppSettings, Library, PlaybackProgress, Track } from '../types'
+import type {
+  AiProviderConfig,
+  AppSettings,
+  Library,
+  PlaybackProgress,
+  Track,
+  TrackMetadataUpdate,
+} from '../types'
 
 export type RepeatMode = 'off' | 'all' | 'one'
 export type View = { kind: 'library' } | { kind: 'playlist'; id: string } | { kind: 'settings' }
@@ -25,6 +32,10 @@ interface OpentifyState {
   importFiles: (paths: string[]) => Promise<void>
   importFolder: (folder: string) => Promise<void>
   removeTrack: (trackId: string) => Promise<void>
+  updateTrackMetadata: (trackId: string, updates: TrackMetadataUpdate) => Promise<void>
+
+  nowPlayingOpen: boolean
+  setNowPlayingOpen: (open: boolean) => void
 
   createPlaylist: (name: string) => Promise<void>
   deletePlaylist: (playlistId: string) => Promise<void>
@@ -71,6 +82,7 @@ export const useStore = create<OpentifyState>((set, get) => ({
   volume: 1,
   shuffle: false,
   repeat: 'off',
+  nowPlayingOpen: false,
 
   init: async () => {
     set({ loading: true, error: null })
@@ -83,6 +95,7 @@ export const useStore = create<OpentifyState>((set, get) => ({
   },
 
   setView: (view) => set({ view }),
+  setNowPlayingOpen: (nowPlayingOpen) => set({ nowPlayingOpen }),
 
   importFiles: async (paths) => {
     if (paths.length === 0) return
@@ -97,6 +110,11 @@ export const useStore = create<OpentifyState>((set, get) => ({
 
   removeTrack: async (trackId) => {
     const library = await api.removeTrack(trackId)
+    set({ library })
+  },
+
+  updateTrackMetadata: async (trackId, updates) => {
+    const library = await api.updateTrackMetadata(trackId, updates)
     set({ library })
   },
 

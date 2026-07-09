@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useStore } from '../state/store'
 import type { Track } from '../types'
+import { IconEdit, IconMore, IconNote, IconPlay, IconTrash } from './icons'
+import { EditTrackModal } from './EditTrackModal'
 
 function formatDuration(secs: number): string {
   const total = Math.max(0, Math.floor(secs))
@@ -24,6 +26,7 @@ export function TrackRow({ track, index, isActive, isPlaying, onPlay }: TrackRow
   const classifyGenre = useStore((s) => s.classifyGenre)
   const aiMode = useStore((s) => s.settings.ai_provider.mode)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [classifying, setClassifying] = useState(false)
 
   async function handleClassify() {
@@ -42,13 +45,15 @@ export function TrackRow({ track, index, isActive, isPlaying, onPlay }: TrackRow
   return (
     <div className={`track-row ${isActive ? 'active' : ''}`} onDoubleClick={onPlay}>
       <div className="track-row-index" onClick={onPlay}>
-        {isActive && isPlaying ? <span className="playing-indicator">▶</span> : index + 1}
+        {isActive && isPlaying ? <IconPlay className="playing-indicator" /> : index + 1}
       </div>
       <div className="track-row-cover">
         {track.cover_data_url ? (
           <img src={track.cover_data_url} alt="" />
         ) : (
-          <div className="cover-placeholder">♪</div>
+          <div className="cover-placeholder">
+            <IconNote />
+          </div>
         )}
       </div>
       <div className="track-row-info">
@@ -68,9 +73,14 @@ export function TrackRow({ track, index, isActive, isPlaying, onPlay }: TrackRow
         )}
       </div>
       <div className="track-row-duration">{formatDuration(track.duration_secs)}</div>
+      <div className="track-row-edit">
+        <button className="icon-button" onClick={() => setEditing(true)} title="Edit track">
+          <IconEdit />
+        </button>
+      </div>
       <div className="track-row-menu">
-        <button className="icon-button" onClick={() => setMenuOpen((v) => !v)}>
-          ⋯
+        <button className="icon-button" onClick={() => setMenuOpen((v) => !v)} title="More options">
+          <IconMore />
         </button>
         {menuOpen && (
           <div className="track-menu" onMouseLeave={() => setMenuOpen(false)}>
@@ -93,11 +103,13 @@ export function TrackRow({ track, index, isActive, isPlaying, onPlay }: TrackRow
                 setMenuOpen(false)
               }}
             >
-              Remove from library
+              <IconTrash className="inline-icon" /> Remove from library
             </button>
           </div>
         )}
       </div>
+
+      {editing && <EditTrackModal track={track} onClose={() => setEditing(false)} />}
     </div>
   )
 }

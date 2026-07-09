@@ -7,6 +7,7 @@ import { LibraryView } from './components/LibraryView'
 import { PlaylistView } from './components/PlaylistView'
 import { SettingsView } from './components/SettingsView'
 import { PlayerBar } from './components/PlayerBar'
+import { NowPlayingView } from './components/NowPlayingView'
 import type { PlaybackProgress } from './types'
 import './App.css'
 
@@ -20,6 +21,7 @@ function App() {
   const importFiles = useStore((s) => s.importFiles)
   const loading = useStore((s) => s.loading)
   const error = useStore((s) => s.error)
+  const nowPlayingOpen = useStore((s) => s.nowPlayingOpen)
 
   useEffect(() => {
     init()
@@ -69,6 +71,7 @@ function App() {
         </main>
       </div>
       <PlayerBar />
+      {nowPlayingOpen && <NowPlayingView />}
     </div>
   )
 }

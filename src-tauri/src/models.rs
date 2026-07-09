@@ -17,6 +17,17 @@ pub struct Track {
     pub ai_genre: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct TrackMetadataUpdate {
+    pub title: String,
+    pub artist: String,
+    pub album: String,
+    pub genre: Option<String>,
+    /// Filesystem path to a newly picked cover image, if the user chose
+    /// one; `None` leaves the existing cover art untouched.
+    pub cover_path: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Playlist {
     pub id: String,

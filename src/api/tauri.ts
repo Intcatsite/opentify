@@ -5,6 +5,7 @@ import type {
   GenrePrediction,
   Library,
   Playlist,
+  TrackMetadataUpdate,
 } from '../types'
 
 export const api = {
@@ -12,6 +13,8 @@ export const api = {
   addFiles: (paths: string[]) => invoke<Library>('add_files', { paths }),
   scanFolder: (folder: string) => invoke<Library>('scan_folder', { folder }),
   removeTrack: (trackId: string) => invoke<Library>('remove_track', { trackId }),
+  updateTrackMetadata: (trackId: string, updates: TrackMetadataUpdate) =>
+    invoke<Library>('update_track_metadata', { trackId, updates }),
 
   createPlaylist: (name: string) => invoke<Playlist>('create_playlist', { name }),
   deletePlaylist: (playlistId: string) => invoke<void>('delete_playlist', { playlistId }),

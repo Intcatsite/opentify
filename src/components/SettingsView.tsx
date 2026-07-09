@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../state/store'
 import type { AiProviderConfig } from '../types'
+import { IconCheck } from './icons'
 
 export function SettingsView() {
   const settings = useStore((s) => s.settings)
@@ -97,7 +98,13 @@ export function SettingsView() {
         )}
 
         <button className="primary-button" onClick={handleSave}>
-          {saved ? 'Saved ✓' : 'Save settings'}
+          {saved ? (
+            <>
+              <IconCheck className="inline-icon" /> Saved
+            </>
+          ) : (
+            'Save settings'
+          )}
         </button>
       </div>
     </div>

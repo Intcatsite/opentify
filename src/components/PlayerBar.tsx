@@ -1,4 +1,15 @@
 import { useStore } from '../state/store'
+import {
+  IconNext,
+  IconNote,
+  IconPause,
+  IconPlay,
+  IconPrev,
+  IconRepeat,
+  IconRepeatOne,
+  IconShuffle,
+  IconVolume,
+} from './icons'
 
 function formatTime(secs: number): string {
   const total = Math.max(0, Math.floor(secs))
@@ -20,6 +31,7 @@ export function PlayerBar() {
   const setVolume = useStore((s) => s.setVolume)
   const toggleShuffle = useStore((s) => s.toggleShuffle)
   const cycleRepeat = useStore((s) => s.cycleRepeat)
+  const setNowPlayingOpen = useStore((s) => s.setNowPlayingOpen)
 
   const duration = currentTrack?.duration_secs ?? 0
   const progressPct = duration > 0 ? (progress.position_secs / duration) * 100 : 0
@@ -28,19 +40,25 @@ export function PlayerBar() {
     <footer className="player-bar">
       <div className="player-bar-track">
         {currentTrack ? (
-          <>
+          <button
+            className="player-bar-track-button"
+            onClick={() => setNowPlayingOpen(true)}
+            title="Open now playing"
+          >
             <div className="track-row-cover">
               {currentTrack.cover_data_url ? (
                 <img src={currentTrack.cover_data_url} alt="" />
               ) : (
-                <div className="cover-placeholder">♪</div>
+                <div className="cover-placeholder">
+                  <IconNote />
+                </div>
               )}
             </div>
             <div className="track-row-info">
               <div className="track-row-title">{currentTrack.title}</div>
               <div className="track-row-artist">{currentTrack.artist}</div>
             </div>
-          </>
+          </button>
         ) : (
           <div className="player-bar-empty">Nothing playing</div>
         )}
@@ -53,23 +71,23 @@ export function PlayerBar() {
             onClick={toggleShuffle}
             title="Shuffle"
           >
-            🔀
+            <IconShuffle />
           </button>
           <button className="icon-button" onClick={prev} title="Previous">
-            ⏮
+            <IconPrev />
           </button>
           <button className="play-button" onClick={togglePlayPause} title="Play/Pause">
-            {progress.is_playing ? '⏸' : '▶'}
+            {progress.is_playing ? <IconPause /> : <IconPlay />}
           </button>
           <button className="icon-button" onClick={next} title="Next">
-            ⏭
+            <IconNext />
           </button>
           <button
             className={`icon-button ${repeat !== 'off' ? 'active' : ''}`}
             onClick={cycleRepeat}
             title={`Repeat: ${repeat}`}
           >
-            {repeat === 'one' ? '🔂' : '🔁'}
+            {repeat === 'one' ? <IconRepeatOne /> : <IconRepeat />}
           </button>
         </div>
         <div className="player-bar-seek">
@@ -92,7 +110,7 @@ export function PlayerBar() {
       </div>
 
       <div className="player-bar-volume">
-        <span>🔊</span>
+        <IconVolume />
         <input
           type="range"
           min={0}

@@ -93,6 +93,37 @@ fn remove_track(state: State<AppState>, track_id: String) -> Result<Library, Str
 }
 
 #[tauri::command]
+fn update_track_metadata(
+    state: State<AppState>,
+    track_id: String,
+    updates: models::TrackMetadataUpdate,
+) -> Result<Library, String> {
+    let cover_data_url = match &updates.cover_path {
+        Some(path) => Some(library::image_path_to_data_url(Path::new(path))?),
+        None => None,
+    };
+    {
+        let mut library = state.library.inner.lock().map_err(|e| e.to_string())?;
+        if let Some(track) = library.tracks.iter_mut().find(|t| t.id == track_id) {
+            track.title = updates.title;
+            track.artist = updates.artist;
+            track.album = updates.album;
+            track.genre = updates.genre;
+            if let Some(cover) = cover_data_url {
+                track.cover_data_url = Some(cover);
+            }
+        }
+    }
+    state.library.persist()?;
+    state
+        .library
+        .inner
+        .lock()
+        .map_err(|e| e.to_string())
+        .map(|l| l.clone())
+}
+
+#[tauri::command]
 fn create_playlist(state: State<AppState>, name: String) -> Result<Playlist, String> {
     let playlist = library::new_playlist(name);
     {
@@ -262,6 +293,7 @@ pub fn run() {
             add_files,
             scan_folder,
             remove_track,
+            update_track_metadata,
             create_playlist,
             delete_playlist,
             add_to_playlist,

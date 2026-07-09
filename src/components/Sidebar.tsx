@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { open } from '@tauri-apps/plugin-dialog'
 import { useStore } from '../state/store'
+import { IconNote, IconPlus, IconSettings } from './icons'
 
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac']
 
@@ -13,6 +14,10 @@ export function Sidebar() {
   const createPlaylist = useStore((s) => s.createPlaylist)
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
+  // Guards against double-creating a playlist: pressing Enter fires the
+  // form's onSubmit *and* triggers a blur on the input, and both handlers
+  // would otherwise call submitNewPlaylist with the same stale name.
+  const submittedRef = useRef(false)
 
   async function handleImportFiles() {
     const selected = await open({
@@ -30,7 +35,14 @@ export function Sidebar() {
     await importFolder(selected)
   }
 
+  function openNewPlaylistForm() {
+    submittedRef.current = false
+    setCreating(true)
+  }
+
   async function submitNewPlaylist() {
+    if (submittedRef.current) return
+    submittedRef.current = true
     const name = newName.trim()
     if (name) await createPlaylist(name)
     setNewName('')
@@ -40,7 +52,7 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <span className="brand-mark">♪</span>
+        <IconNote className="brand-mark" />
         <span className="brand-name">Opentify</span>
       </div>
 
@@ -49,24 +61,24 @@ export function Sidebar() {
           className={`nav-item ${view.kind === 'library' ? 'active' : ''}`}
           onClick={() => setView({ kind: 'library' })}
         >
-          <span className="nav-icon">🎵</span> Your Library
+          <IconNote className="nav-icon" /> Your Library
         </button>
       </nav>
 
       <div className="sidebar-actions">
         <button className="sidebar-action" onClick={handleImportFiles}>
-          + Import files
+          <IconPlus className="inline-icon" /> Import files
         </button>
         <button className="sidebar-action" onClick={handleImportFolder}>
-          + Import folder
+          <IconPlus className="inline-icon" /> Import folder
         </button>
       </div>
 
       <div className="sidebar-playlists">
         <div className="sidebar-section-header">
           <span>Playlists</span>
-          <button className="icon-button" onClick={() => setCreating(true)} title="New playlist">
-            +
+          <button className="icon-button" onClick={openNewPlaylistForm} title="New playlist">
+            <IconPlus />
           </button>
         </div>
 
@@ -108,7 +120,7 @@ export function Sidebar() {
         className={`nav-item settings-item ${view.kind === 'settings' ? 'active' : ''}`}
         onClick={() => setView({ kind: 'settings' })}
       >
-        <span className="nav-icon">⚙</span> Settings
+        <IconSettings className="nav-icon" /> Settings
       </button>
     </aside>
   )

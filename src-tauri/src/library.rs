@@ -123,6 +123,21 @@ fn picture_to_data_url(picture: &Picture) -> String {
     format!("data:{mime};base64,{encoded}")
 }
 
+/// Reads a user-picked image file (from the cover-art file dialog) and
+/// encodes it as a `data:` URL for storage/display, guessing the MIME type
+/// from the file extension since we don't decode the image itself.
+pub fn image_path_to_data_url(path: &Path) -> Result<String, String> {
+    let mime = match path.extension().and_then(|e| e.to_str()).map(|e| e.to_lowercase()) {
+        Some(ext) if ext == "png" => "image/png",
+        Some(ext) if ext == "gif" => "image/gif",
+        Some(ext) if ext == "webp" => "image/webp",
+        _ => "image/jpeg",
+    };
+    let bytes = fs::read(path).map_err(|e| e.to_string())?;
+    let encoded = base64::engine::general_purpose::STANDARD.encode(bytes);
+    Ok(format!("data:{mime};base64,{encoded}"))
+}
+
 /// Recursively scans a folder for supported audio files and returns freshly
 /// parsed tracks. Paths already present in `existing_paths` are skipped so
 /// re-scanning a watched folder is cheap and doesn't duplicate library
