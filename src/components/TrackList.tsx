@@ -1,5 +1,6 @@
 import { useStore } from '../state/store'
 import type { Track } from '../types'
+import { IconClock } from './icons'
 import { TrackRow } from './TrackRow'
 
 interface TrackListProps {
@@ -24,7 +25,10 @@ export function TrackList({ tracks, emptyMessage }: TrackListProps) {
         <div className="track-row-info">Title</div>
         <div className="track-row-album">Album</div>
         <div className="track-row-genre">Genre</div>
-        <div className="track-row-duration">⏱</div>
+        <div className="track-row-duration">
+          <IconClock />
+        </div>
+        <div className="track-row-edit" />
         <div className="track-row-menu" />
       </div>
       {tracks.map((track, index) => (

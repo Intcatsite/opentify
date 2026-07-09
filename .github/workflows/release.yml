@@ -49,5 +49,5 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Opentify ${{ github.ref_name }}'
-          releaseDraft: true
-          prerelease: false
+          releaseDraft: false
+          prerelease: true

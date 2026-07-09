@@ -12,6 +12,14 @@ export interface Track {
   ai_genre: string | null
 }
 
+export interface TrackMetadataUpdate {
+  title: string
+  artist: string
+  album: string
+  genre: string | null
+  cover_data_url: string | null
+}
+
 export interface Playlist {
   id: string
   name: string
