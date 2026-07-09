@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { api } from '../api/tauri'
+import { platform } from '../platform'
 import type {
   AiProviderConfig,
   AppSettings,
@@ -31,8 +31,9 @@ interface OpentifyState {
   init: () => Promise<void>
   setView: (view: View) => void
 
-  importFiles: (paths: string[]) => Promise<void>
-  importFolder: (folder: string) => Promise<void>
+  importFiles: () => Promise<void>
+  importFolder: () => Promise<void>
+  handleDroppedLibrary: (library: Library) => Promise<void>
   removeTrack: (trackId: string) => Promise<void>
   updateTrackMetadata: (trackId: string, updates: TrackMetadataUpdate) => Promise<void>
   setTrackGenre: (trackId: string, genre: string) => Promise<void>
@@ -87,6 +88,13 @@ export const useStore = create<OpentifyState>((set, get) => {
     set({ analyzing: null })
   }
 
+  async function applyImportedLibrary(library: Library) {
+    const existingIds = new Set(get().library.tracks.map((t) => t.id))
+    set({ library })
+    const newIds = library.tracks.map((t) => t.id).filter((id) => !existingIds.has(id))
+    await classifyNewTracks(newIds)
+  }
+
   return {
   library: { tracks: [], playlists: [], watched_folders: [] },
   settings: { ai_provider: { mode: 'none' }, theme: null },
@@ -106,7 +114,7 @@ export const useStore = create<OpentifyState>((set, get) => {
   init: async () => {
     set({ loading: true, error: null })
     try {
-      const [library, settings] = await Promise.all([api.getLibrary(), api.getSettings()])
+      const [library, settings] = await Promise.all([platform.getLibrary(), platform.getSettings()])
       set({ library, settings, loading: false })
     } catch (e) {
       set({ error: String(e), loading: false })
@@ -116,45 +124,42 @@ export const useStore = create<OpentifyState>((set, get) => {
   setView: (view) => set({ view }),
   setNowPlayingOpen: (nowPlayingOpen) => set({ nowPlayingOpen }),
 
-  importFiles: async (paths) => {
-    if (paths.length === 0) return
-    const existingIds = new Set(get().library.tracks.map((t) => t.id))
-    const library = await api.addFiles(paths)
-    set({ library })
-    const newIds = library.tracks.map((t) => t.id).filter((id) => !existingIds.has(id))
-    await classifyNewTracks(newIds)
+  importFiles: async () => {
+    const library = await platform.pickAndImportFiles()
+    await applyImportedLibrary(library)
   },
 
-  importFolder: async (folder) => {
-    const existingIds = new Set(get().library.tracks.map((t) => t.id))
-    const library = await api.scanFolder(folder)
-    set({ library })
-    const newIds = library.tracks.map((t) => t.id).filter((id) => !existingIds.has(id))
-    await classifyNewTracks(newIds)
+  importFolder: async () => {
+    const library = await platform.pickAndImportFolder()
+    await applyImportedLibrary(library)
+  },
+
+  handleDroppedLibrary: async (library) => {
+    await applyImportedLibrary(library)
   },
 
   removeTrack: async (trackId) => {
-    const library = await api.removeTrack(trackId)
+    const library = await platform.removeTrack(trackId)
     set({ library })
   },
 
   updateTrackMetadata: async (trackId, updates) => {
-    const library = await api.updateTrackMetadata(trackId, updates)
+    const library = await platform.updateTrackMetadata(trackId, updates)
     set({ library })
   },
 
   setTrackGenre: async (trackId, genre) => {
-    const library = await api.setTrackGenre(trackId, genre)
+    const library = await platform.setTrackGenre(trackId, genre)
     set({ library })
   },
 
   createPlaylist: async (name) => {
-    const playlist = await api.createPlaylist(name)
+    const playlist = await platform.createPlaylist(name)
     set((s) => ({ library: { ...s.library, playlists: [...s.library.playlists, playlist] } }))
   },
 
   deletePlaylist: async (playlistId) => {
-    await api.deletePlaylist(playlistId)
+    await platform.deletePlaylist(playlistId)
     set((s) => ({
       library: { ...s.library, playlists: s.library.playlists.filter((p) => p.id !== playlistId) },
       view: s.view.kind === 'playlist' && s.view.id === playlistId ? { kind: 'library' } : s.view,
@@ -162,7 +167,7 @@ export const useStore = create<OpentifyState>((set, get) => {
   },
 
   addToPlaylist: async (playlistId, trackId) => {
-    await api.addToPlaylist(playlistId, trackId)
+    await platform.addToPlaylist(playlistId, trackId)
     set((s) => ({
       library: {
         ...s.library,
@@ -176,7 +181,7 @@ export const useStore = create<OpentifyState>((set, get) => {
   },
 
   removeFromPlaylist: async (playlistId, trackId) => {
-    await api.removeFromPlaylist(playlistId, trackId)
+    await platform.removeFromPlaylist(playlistId, trackId)
     set((s) => ({
       library: {
         ...s.library,
@@ -193,17 +198,17 @@ export const useStore = create<OpentifyState>((set, get) => {
     const index = get().shuffle ? ordered.indexOf(startId) : startIndex
     set({ queue: ordered, currentIndex: index, progress: { position_secs: 0, is_playing: true } })
     const track = get().library.tracks.find((t) => t.id === ordered[index])
-    if (track) await api.playTrack(track.path)
+    if (track) await platform.playTrack(track.id)
   },
 
   togglePlayPause: async () => {
     const { progress, currentIndex } = get()
     if (currentIndex < 0) return
     if (progress.is_playing) {
-      await api.pause()
+      await platform.pause()
       set({ progress: { ...progress, is_playing: false } })
     } else {
-      await api.resume()
+      await platform.resume()
       set({ progress: { ...progress, is_playing: true } })
     }
   },
@@ -215,37 +220,37 @@ export const useStore = create<OpentifyState>((set, get) => {
     if (nextIndex >= queue.length) {
       if (repeat === 'all') nextIndex = 0
       else {
-        await api.stop()
+        await platform.stop()
         set({ progress: { position_secs: 0, is_playing: false } })
         return
       }
     }
     const track = library.tracks.find((t) => t.id === queue[nextIndex])
     set({ currentIndex: nextIndex, progress: { position_secs: 0, is_playing: true } })
-    if (track) await api.playTrack(track.path)
+    if (track) await platform.playTrack(track.id)
   },
 
   prev: async () => {
     const { queue, currentIndex, progress, library } = get()
     if (queue.length === 0) return
     if (progress.position_secs > 3) {
-      await api.seek(0)
+      await platform.seek(0)
       set({ progress: { ...progress, position_secs: 0 } })
       return
     }
     const prevIndex = Math.max(0, currentIndex - 1)
     const track = library.tracks.find((t) => t.id === queue[prevIndex])
     set({ currentIndex: prevIndex, progress: { position_secs: 0, is_playing: true } })
-    if (track) await api.playTrack(track.path)
+    if (track) await platform.playTrack(track.id)
   },
 
   seek: async (positionSecs) => {
-    await api.seek(positionSecs)
+    await platform.seek(positionSecs)
     set((s) => ({ progress: { ...s.progress, position_secs: positionSecs } }))
   },
 
   setVolume: async (volume) => {
-    await api.setVolume(volume)
+    await platform.setVolume(volume)
     set({ volume })
   },
 
@@ -262,19 +267,19 @@ export const useStore = create<OpentifyState>((set, get) => {
     const { repeat } = get()
     if (repeat === 'one') {
       const track = get().currentTrack()
-      if (track) api.playTrack(track.path)
+      if (track) platform.playTrack(track.id)
       return
     }
     get().next()
   },
 
   setAiProvider: async (config) => {
-    await api.setAiProvider(config)
+    await platform.setAiProvider(config)
     set((s) => ({ settings: { ...s.settings, ai_provider: config } }))
   },
 
   classifyGenre: async (trackId) => {
-    const prediction = await api.classifyTrackGenre(trackId)
+    const prediction = await platform.classifyTrackGenre(trackId)
     set((s) => ({
       library: {
         ...s.library,

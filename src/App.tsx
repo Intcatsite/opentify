@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
-import { listen } from '@tauri-apps/api/event'
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useStore } from './state/store'
+import { platform } from './platform'
 import { Sidebar } from './components/Sidebar'
 import { LibraryView } from './components/LibraryView'
 import { PlaylistView } from './components/PlaylistView'
@@ -9,17 +8,14 @@ import { SettingsView } from './components/SettingsView'
 import { PlayerBar } from './components/PlayerBar'
 import { NowPlayingView } from './components/NowPlayingView'
 import { AnalyzingBanner } from './components/AnalyzingBanner'
-import type { PlaybackProgress } from './types'
 import './App.css'
-
-const AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac'])
 
 function App() {
   const init = useStore((s) => s.init)
   const view = useStore((s) => s.view)
   const onProgress = useStore((s) => s.onProgress)
   const onTrackEnded = useStore((s) => s.onTrackEnded)
-  const importFiles = useStore((s) => s.importFiles)
+  const handleDroppedLibrary = useStore((s) => s.handleDroppedLibrary)
   const loading = useStore((s) => s.loading)
   const error = useStore((s) => s.error)
   const nowPlayingOpen = useStore((s) => s.nowPlayingOpen)
@@ -27,28 +23,16 @@ function App() {
   useEffect(() => {
     init()
 
-    const unlistenProgress = listen<PlaybackProgress>('player://progress', (event) => {
-      onProgress(event.payload)
-    })
-    const unlistenEnded = listen('player://ended', () => {
-      onTrackEnded()
-    })
-
-    const webview = getCurrentWebviewWindow()
-    const unlistenDrop = webview.onDragDropEvent((event) => {
-      if (event.payload.type === 'drop') {
-        const audioPaths = event.payload.paths.filter((p) => {
-          const ext = p.split('.').pop()?.toLowerCase()
-          return ext ? AUDIO_EXTENSIONS.has(ext) : false
-        })
-        if (audioPaths.length > 0) importFiles(audioPaths)
-      }
+    const unlistenProgress = platform.onProgress(onProgress)
+    const unlistenEnded = platform.onTrackEnded(onTrackEnded)
+    const unlistenDrop = platform.onFilesDropped((library) => {
+      handleDroppedLibrary(library)
     })
 
     return () => {
-      unlistenProgress.then((f) => f())
-      unlistenEnded.then((f) => f())
-      unlistenDrop.then((f) => f())
+      unlistenProgress()
+      unlistenEnded()
+      unlistenDrop()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

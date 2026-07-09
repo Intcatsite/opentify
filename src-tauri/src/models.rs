@@ -23,9 +23,12 @@ pub struct TrackMetadataUpdate {
     pub artist: String,
     pub album: String,
     pub genre: Option<String>,
-    /// Filesystem path to a newly picked cover image, if the user chose
-    /// one; `None` leaves the existing cover art untouched.
-    pub cover_path: Option<String>,
+    /// A `data:` URL for a newly picked cover image, if the user chose
+    /// one; `None` leaves the existing cover art untouched. Callers
+    /// convert the picked file to a data URL themselves (see the
+    /// `read_image_as_data_url` command) so this type doesn't care
+    /// whether the image came from a filesystem path or a browser File.
+    pub cover_data_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

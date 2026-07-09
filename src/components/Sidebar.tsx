@@ -1,10 +1,8 @@
 import { useRef, useState } from 'react'
-import { open } from '@tauri-apps/plugin-dialog'
 import { useStore } from '../state/store'
+import { platform } from '../platform'
 import logo from '../assets/logo.png'
 import { IconNote, IconPlus, IconSettings } from './icons'
-
-const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac']
 
 export function Sidebar() {
   const library = useStore((s) => s.library)
@@ -19,22 +17,6 @@ export function Sidebar() {
   // form's onSubmit *and* triggers a blur on the input, and both handlers
   // would otherwise call submitNewPlaylist with the same stale name.
   const submittedRef = useRef(false)
-
-  async function handleImportFiles() {
-    const selected = await open({
-      multiple: true,
-      filters: [{ name: 'Audio', extensions: AUDIO_EXTENSIONS }],
-    })
-    if (!selected) return
-    const paths = Array.isArray(selected) ? selected : [selected]
-    await importFiles(paths)
-  }
-
-  async function handleImportFolder() {
-    const selected = await open({ directory: true })
-    if (!selected || Array.isArray(selected)) return
-    await importFolder(selected)
-  }
 
   function openNewPlaylistForm() {
     submittedRef.current = false
@@ -67,12 +49,14 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar-actions">
-        <button className="sidebar-action" onClick={handleImportFiles}>
+        <button className="sidebar-action" onClick={() => importFiles()}>
           <IconPlus className="inline-icon" /> Import files
         </button>
-        <button className="sidebar-action" onClick={handleImportFolder}>
-          <IconPlus className="inline-icon" /> Import folder
-        </button>
+        {platform.supportsFolderImport && (
+          <button className="sidebar-action" onClick={() => importFolder()}>
+            <IconPlus className="inline-icon" /> Import folder
+          </button>
+        )}
       </div>
 
       <div className="sidebar-playlists">

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../state/store'
+import { platform } from '../platform'
 import type { AiProviderConfig } from '../types'
 import { IconCheck } from './icons'
 
@@ -38,6 +39,14 @@ export function SettingsView() {
         <p className="view-subtitle">Configure genre detection &amp; AI features</p>
       </header>
 
+      {platform.name === 'web' && (
+        <p className="settings-hint" style={{ marginBottom: 20 }}>
+          Running in your browser: your library lives in this browser's local storage only —
+          nothing is uploaded anywhere, but clearing site data (or switching browsers/devices)
+          means starting over. For a persistent, full-featured setup, use the desktop app.
+        </p>
+      )}
+
       <div className="settings-panel">
         <h2>AI genre detection</h2>
         <p className="settings-hint">
@@ -53,16 +62,18 @@ export function SettingsView() {
           </div>
         </label>
 
-        <label className="settings-radio">
-          <input type="radio" checked={mode === 'local'} onChange={() => setMode('local')} />
-          <div>
-            <strong>Local model</strong>
-            <div className="settings-hint">
-              Runs fully offline on this machine using an embedded audio-feature classifier. Audio
-              never leaves your computer.
+        {platform.supportsLocalAi && (
+          <label className="settings-radio">
+            <input type="radio" checked={mode === 'local'} onChange={() => setMode('local')} />
+            <div>
+              <strong>Local model</strong>
+              <div className="settings-hint">
+                Runs fully offline on this machine using an embedded audio-feature classifier.
+                Audio never leaves your computer.
+              </div>
             </div>
-          </div>
-        </label>
+          </label>
+        )}
 
         <label className="settings-radio">
           <input type="radio" checked={mode === 'cloud'} onChange={() => setMode('cloud')} />

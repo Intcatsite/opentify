@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { open } from '@tauri-apps/plugin-dialog'
-import { convertFileSrc } from '@tauri-apps/api/core'
 import { useStore } from '../state/store'
+import { platform } from '../platform'
 import type { Track } from '../types'
 import { IconImage, IconClose } from './icons'
 
@@ -10,26 +9,21 @@ interface EditTrackModalProps {
   onClose: () => void
 }
 
-const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif']
-
 export function EditTrackModal({ track, onClose }: EditTrackModalProps) {
   const updateTrackMetadata = useStore((s) => s.updateTrackMetadata)
   const [title, setTitle] = useState(track.title)
   const [artist, setArtist] = useState(track.artist)
   const [album, setAlbum] = useState(track.album)
   const [genre, setGenre] = useState(track.genre ?? '')
-  const [coverPath, setCoverPath] = useState<string | null>(null)
+  const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(track.cover_data_url)
   const [saving, setSaving] = useState(false)
 
   async function handlePickCover() {
-    const selected = await open({
-      multiple: false,
-      filters: [{ name: 'Image', extensions: IMAGE_EXTENSIONS }],
-    })
-    if (!selected || Array.isArray(selected)) return
-    setCoverPath(selected)
-    setCoverPreview(convertFileSrc(selected))
+    const dataUrl = await platform.pickCoverImageDataUrl()
+    if (!dataUrl) return
+    setCoverDataUrl(dataUrl)
+    setCoverPreview(dataUrl)
   }
 
   async function handleSave() {
@@ -40,7 +34,7 @@ export function EditTrackModal({ track, onClose }: EditTrackModalProps) {
         artist: artist.trim() || 'Unknown Artist',
         album: album.trim() || 'Unknown Album',
         genre: genre.trim() ? genre.trim() : null,
-        cover_path: coverPath,
+        cover_data_url: coverDataUrl,
       })
       onClose()
     } finally {

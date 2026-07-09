@@ -17,7 +17,7 @@ export interface TrackMetadataUpdate {
   artist: string
   album: string
   genre: string | null
-  cover_path: string | null
+  cover_data_url: string | null
 }
 
 export interface Playlist {

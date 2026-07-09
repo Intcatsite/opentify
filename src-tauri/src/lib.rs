@@ -110,15 +110,16 @@ fn set_track_genre(state: State<AppState>, track_id: String, genre: String) -> R
 }
 
 #[tauri::command]
+fn read_image_as_data_url(path: String) -> Result<String, String> {
+    library::image_path_to_data_url(Path::new(&path))
+}
+
+#[tauri::command]
 fn update_track_metadata(
     state: State<AppState>,
     track_id: String,
     updates: models::TrackMetadataUpdate,
 ) -> Result<Library, String> {
-    let cover_data_url = match &updates.cover_path {
-        Some(path) => Some(library::image_path_to_data_url(Path::new(path))?),
-        None => None,
-    };
     {
         let mut library = state.library.inner.lock().map_err(|e| e.to_string())?;
         if let Some(track) = library.tracks.iter_mut().find(|t| t.id == track_id) {
@@ -126,7 +127,7 @@ fn update_track_metadata(
             track.artist = updates.artist;
             track.album = updates.album;
             track.genre = updates.genre;
-            if let Some(cover) = cover_data_url {
+            if let Some(cover) = updates.cover_data_url {
                 track.cover_data_url = Some(cover);
             }
         }
@@ -311,6 +312,7 @@ pub fn run() {
             scan_folder,
             remove_track,
             update_track_metadata,
+            read_image_as_data_url,
             set_track_genre,
             create_playlist,
             delete_playlist,
