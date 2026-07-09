@@ -34,9 +34,11 @@
 }
 
 .brand-mark {
-  color: var(--accent);
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .sidebar-nav,

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { open } from '@tauri-apps/plugin-dialog'
 import { useStore } from '../state/store'
+import logo from '../assets/logo.png'
 import { IconNote, IconPlus, IconSettings } from './icons'
 
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac']
@@ -52,7 +53,7 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <IconNote className="brand-mark" />
+        <img src={logo} alt="" className="brand-mark" />
         <span className="brand-name">Opentify</span>
       </div>
 
